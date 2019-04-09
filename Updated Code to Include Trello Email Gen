@@ -1,1 +1,92 @@
+function myFunction() {
+    var ss = SpreadsheetApp.getActiveSpreadsheet
+    var greeting;
+    var time = new Date().getHours();
+        if (time < 10) {greeting = "Good morning";} else if (time < 20) {greeting = "Good afternoon";} else {greeting = "Good evening";}
+    var keys = ["Password","Feedback","Issue","Missing"];
+    var data = {
+        Password: {
+            sheet: ss.getSheetByName('Password Reset'),
+            array: ss.getSheetByName('Password Reset').getRange('A2:F').getValues(),
+            html: 'passwordEmail'
+        },
+        Feedback: {
+            sheet: ss.getSheetByName('Feedback / Suggestions'),
+            array: ss.getSheetByName('Feedback / Suggestions').getRange('A2:F').getValues(),
+            html: 'feedbackEmail'
+        },
+        Issue: {
+            sheet: ss.getSheetByName('Issues'),
+            array: ss.getSheetByName('Issues').getRange('A2:F').getValues(),
+            html: 'issueEmail'
+        },
+        Missing: {
+            sheet: ss.getSheetByName('Missing Watches'),
+            array: ss.getSheetByName('Missing Watches').getRange('A2:F').getValues(),
+            html: 'watchesEmail'
+        }      
+    }
+    for(var i in keys){
+            
+            for(var j = 0 ;j< data[keys[i]].array.length;j++){
+            switch(data[keys[i]].array[j][5]){
+                   case 1:
+                    var html = HtmlService.createTemplateFromFile(data[keys[i]].html);
+                    var returnData = [greeting,Utilities.formatDate(data[keys[i]].array[j][0], "PST", "MM/dd/yyyy HH:mm:ss"),data[keys[i]].array[j][1],data[keys[i]].array[j][2],data[keys[i]].array[j][3],data[keys[i]].array[j][4]];
+                    html.data = returnData;
+                    var template = html.evaluate().getContent();
+                    if (i == 0){var email = data[keys[i]].array[j][3]}
+                    else{
+                    var email = data[keys[i]].array[j][2]}
+                   try {
+                        MailApp.sendEmail({
+                            to:email,
+                            cc:'corps.ito@csum.edu',
+                            subject: 'Help Form Request: '+keys[i],
+                            htmlBody: template,
+                            name: 'CMA Corps of Cadets Help Form'
+                        });
+                        data[keys[i]].sheet.getRange(j+2,7).setValue('EMAIL_SENT');
+                        try{
+                       var issue;
+                        if(i=0){
+                        issue = data[keys[i]].array[j][4]
+                        }
+                        else if(i = 1){
+                        issue = data[keys[i]].array[j][3] + ':\n' +  data[keys[i]].array[j][4]
+                        }
+                        else if(i = 2){
+                        issue = 'URl:' +data[keys[i]].array[j][3] + '\n Text:' + data[keys[i]].array[j][4]
+                        }
+                        else{
+                        issue = keys[i] + ' ' + ss.getUrl()
+                        }
+                       
+                        MailApp.sendEmail({
+                        to:'corps_email_daemon+h9wojuqje3gigtzx0s0a@boards.trello.com',
+                        subject: 'Help Form Request: '+keys[i] + ' ' + time + ' ' + email , 
+                        body: 'Name:' + data[keys[i]].array[j][1]+'\n Date:' + time + '\n Email:' + email +'\n Issue:' + issue })
+                       }
+                        catch (err) {MailApp.sendEmail({
+                            to:'corps.ito@csum.edu',
+                            subject: 'Help Form Request Error',
+                            body: '',
+                            name: 'CMA Corps of Cadets Help Form'
+                        });  
+                        }
+                       }catch (err) {MailApp.sendEmail({
+                            to:'corps.ito@csum.edu',
+                            subject: 'Help Form Request Error',
+                            body: '',
+                            name: 'CMA Corps of Cadets Help Form'
+                        });
+                                     }
+                        break;
+                    default:
+                    continue;}}}
+    
 
+
+
+
+}
